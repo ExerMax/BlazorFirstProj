@@ -1,0 +1,189 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using System.Text.Json
+@using System.Text.Json.Serialization
+
+@inject IHttpClientFactory ClientFactory
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+@page "/Admin/Products"
+
+<PageTitle>Products</PageTitle>
+
+<div>
+    @if (product == null)
+    {
+        <p>
+            ID: ;
+        </p>
+    }
+    else
+    {
+        <p>
+            ID: @product.Id;
+        </p>
+    }
+    <p>
+        Название:
+        <input @bind="inputName" />
+    </p>
+    <p>
+        Производитель:
+        <input @bind="inputManufacturer" />
+    </p>
+    <p>
+        Описание:
+        <input @bind="inputDescription" />
+    </p>
+    <p>
+        Категория:
+        <input @bind="inputCategory" />
+    </p>
+    <p>
+        Цена:
+        <input @bind="inputPrice" />
+    </p>
+    <p>
+        <img id="image" />
+    </p>
+    <p>
+        <InputFile id="photo" OnChange="@SingleUpload" @bind-Value="@inputPicture" accept=".jpg,.jpeg,.png" />
+    </p>
+    <p>
+        <button @onclick="Submit">Сохранить</button>
+    </p>
+    <p>
+        <button @onclick="Clean">Сбросить</button>
+    </p>
+</div>
+
+<table>
+    <thead><tr><th>ID</th><th>Название</th><th>Производитель</th><th></th></tr></thead>
+    <tbody>
+        @if (products is null)
+        {
+            <p>Unable to get products. Please try again later.</p>
+        }
+        else
+        {
+            @foreach (Product product in products)
+            {
+                <tr>
+                    <td>@product.Id</td>
+                    <td>@product.Name</td>
+                    <td>@product.Manufacturer</td>
+                    <td>
+                        <button @onclick="@(async ()=> await Edit(product))">Изменить</button>
+                        <button @onclick="@(async ()=> await Delete(product.Id))">Удалить</button>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+
+
+@code {
+    private string? inputName;
+    private string? inputManufacturer;
+    private string? inputDescription;
+    private string? inputCategory;
+    private int inputPrice = 0;
+    private byte[]? inputPicture;
+
+    private IEnumerable<Product>? products = Array.Empty<Product>();
+    private bool getProductsError;
+    private bool shouldRender;
+    private HttpClient client = null!;
+    private Product product = new();
+
+    protected override bool ShouldRender() => shouldRender;
+
+    protected override async Task OnInitializedAsync()
+    {
+        client = ClientFactory.CreateClient();
+        client.BaseAddress = new Uri("https://localhost:7106/api/products");
+
+        await LoadData();
+
+        shouldRender = true;
+    }
+
+    async Task LoadData()
+    {
+        products = await client.GetFromJsonAsync<List<Product>>(client.BaseAddress) ?? products;
+    }
+
+    async Task Delete(Guid id)
+    {
+        await client.DeleteAsync($"{client.BaseAddress}/{id}");
+        await LoadData();
+    }
+
+    async Task Edit(Product p)
+    {
+        product.Id = p.Id;
+        product.Name = p.Name;
+        inputName = p.Name;
+        inputManufacturer = p.Manufacturer;
+        inputDescription = p.Description;
+        inputCategory = p.Category;
+        inputPrice = p.Price;
+        if (p.Image != null)
+        {
+            inputPicture = p.Image;
+            await SetImageAsync();
+        }
+    }
+    async Task Submit()
+    {
+        product.Name = inputName;
+        product.Manufacturer = inputManufacturer;
+        product.Description = inputDescription;
+        product.Category = inputCategory;
+        product.Price = inputPrice;
+        product.Image = inputPicture;
+
+        if (product.Id == Guid.Empty)
+        {
+            await client.PostAsJsonAsync(client.BaseAddress, product);
+        }
+        else
+        {
+            await client.DeleteAsync($"{client.BaseAddress}/{product.Id}");
+            await client.PostAsJsonAsync(client.BaseAddress, product);
+        }
+
+        await Clean();
+        await LoadData();
+    }
+    async Task Clean()
+    {
+        product.Id = Guid.Empty;
+        product.Name = "";
+        inputName = null;
+        inputManufacturer = null;
+        inputDescription = null;
+        inputCategory = null;
+        inputPrice = 0;
+        inputPicture = null;
+    }
+
+    private async Task SingleUpload(InputFileChangeEventArgs e)
+    {
+        MemoryStream ms = new MemoryStream();
+        await e.File.OpenReadStream().CopyToAsync(ms);
+        var bytes = ms.ToArray();
+        inputPicture = bytes;
+        await SetImageAsync();
+    }
+
+    private async Task SetImageAsync()
+    {
+        var imageStream = new MemoryStream(inputPicture);
+        var dotnetImageStream = new DotNetStreamReference(imageStream);
+        //await JS.InvokeVoidAsync("setImage", "image", dotnetImageStream);
+    }
+}

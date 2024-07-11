@@ -1,0 +1,46 @@
+﻿<h3>@prod.Name</h3>
+
+<div>
+    <div>
+        <p>
+            Производитель: @prod.Manufacturer
+        </p>
+        <p>
+            Цена: @prod.Price
+        </p>
+    </div>
+    <div>
+        <button class="btn btn-primary" @onclick="Increase">+</button>
+        <button class="btn btn-primary" @onclick="Decrease">-</button>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Product? prod { get; set; }
+    public int value { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        //client = ClientFactory.CreateClient();
+        //client.BaseAddress = new Uri("https://localhost:7106/api/basket");
+        //value = 1;
+
+        //await LoadData();
+    }
+
+    private void Increase()
+    {
+        //Добавление в корзину
+    }
+    private void Decrease()
+    {
+        
+    }
+
+    async Task Delete(Guid id)
+    {
+        //await client.DeleteAsync($"{client.BaseAddress}/{id}");
+        //await LoadData();
+    }
+}

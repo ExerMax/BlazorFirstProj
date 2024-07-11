@@ -1,0 +1,45 @@
+﻿@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject IHttpClientFactory ClientFactory
+
+@page "/Admin/Users"
+
+<PageTitle>Users</PageTitle>
+
+<h1>Users</h1>
+
+@if (users is null)
+{
+    <p>Unable to get users. Please try again later.</p>
+}
+else
+{
+    <ul>
+        @foreach (User user in users)
+        {
+            <li>@user.Id</li>
+            <li>@user.Name</li>
+            <li></li>
+        }
+    </ul>
+}
+
+
+
+@code {
+    private IEnumerable<User>? users = Array.Empty<User>();
+    private bool getUsersError;
+    private bool shouldRender;
+
+    protected override bool ShouldRender() => shouldRender;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var client = ClientFactory.CreateClient();
+        client.BaseAddress = new Uri("https://localhost:7106/api/users");
+
+        users = await client.GetFromJsonAsync<List<User>>(client.BaseAddress) ?? users;
+
+        shouldRender = true;
+    }
+}

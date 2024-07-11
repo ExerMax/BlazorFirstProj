@@ -1,0 +1,64 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using System.Text.Json.Serialization
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using System.Text.Json
+@inject ProtectedLocalStorage ProtectedSessionStore
+@inject IHttpClientFactory ClientFactory
+
+<h3>@prod.Name</h3>
+
+<div>
+    <div>
+        <p>
+            ID: @prod.Id
+        </p>
+        <p>
+            Производитель: @prod.Manufacturer
+        </p>
+        <p>
+            Описание: @prod.Description
+        </p>
+        <p>
+            Цена: @prod.Price
+        </p>
+    </div>
+    <div>
+        <button class="btn btn-primary" @onclick="ToBasket">@buttonText</button>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Product prod { get; set; }
+    private List<Guid>? products = new List<Guid>();
+    private HttpClient client = null!;
+    private string buttonText = "В корзину";
+
+    protected override async Task OnInitializedAsync()
+    {
+        client = ClientFactory.CreateClient();
+        client.BaseAddress = new Uri("https://localhost:7106/api/basket");
+
+        //var b = await client.GetFromJsonAsync<Basket>($"{client.BaseAddress}/{prod.Id}");
+        // if(b != null)
+        // {
+        //     buttonText = "Отмена";
+        // }
+    }
+
+    private async void ToBasket()
+    {
+        if (buttonText == "В корзину")
+        {
+            var id = prod.Id;
+            await client.PostAsJsonAsync(client.BaseAddress, id);
+            buttonText = "Отмена";
+        }
+        else if (buttonText == "Отмена")
+        {
+            await client.DeleteAsync($"{client.BaseAddress}/{prod.Id}");
+            buttonText = "В корзину";
+        }
+    }
+}

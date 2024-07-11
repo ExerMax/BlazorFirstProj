@@ -1,0 +1,87 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@using Microsoft.AspNetCore.Mvc
+@inject IHttpClientFactory ClientFactory
+@rendermode InteractiveServer
+@inject NavigationManager NavigationManager
+
+@page "/SignUp"
+
+<h3>SignUp</h3>
+
+<div class="nav-item px-3">
+    <NavLink class="nav-link" href="/">
+        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Главная
+    </NavLink>
+</div>
+
+<div>
+    <p>
+        Имя Пользователя:
+        <input @bind="name" />
+    </p>
+    <p>
+        Пароль:
+        <input @bind="password" />
+    </p>
+    <p>
+        <button @onclick="Submit">Зарегистрироваться</button>
+    </p>
+
+    @if (messageFlag)
+    {
+        <p>@message</p>
+    }
+</div>
+
+@code {
+    private string name = "";
+    private string password = "";
+
+    private bool messageFlag = false;
+    private string message = "";
+
+    private bool shouldRender;
+    private HttpClient client = null!;
+    private string redirectionAddress = "https://localhost:7106";
+
+    protected override async Task OnInitializedAsync()
+    {
+        client = ClientFactory.CreateClient();
+        client.BaseAddress = new Uri("https://localhost:7106/api/users");
+        shouldRender = true;
+    }
+
+    async Task Submit()
+    {
+        if (name == "")
+        {
+            message = "Введите имя";
+            messageFlag = true;
+        }
+        else if (password == "")
+        {
+            message = "Введите пароль";
+            messageFlag = true;
+        }
+        else if (password.Length <= 3 || password.Length > 50)
+        {
+            message = "Пароль должен быть от 4 до 50 символов";
+            messageFlag = true;
+        }
+        else if (name.Length > 50)
+        {
+            message = "Имя должно быть до 50 символов";
+            messageFlag = true;
+        }
+        else
+        {
+            messageFlag = false;
+            User newUser = new User { Id = Guid.NewGuid(), Name = name, Password = password };
+            await client.PostAsJsonAsync(client.BaseAddress, newUser);
+            NavigationManager.NavigateTo(redirectionAddress);
+        }
+    }
+}

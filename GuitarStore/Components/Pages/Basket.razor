@@ -1,0 +1,42 @@
+﻿@using GuitarStore.Components.Frames
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject IHttpClientFactory ClientFactory
+@rendermode InteractiveServer
+
+@page "/Basket"
+
+<h3>Корзина</h3>
+
+@if (products is null)
+{
+    <p>К сожалению в этой категории товаров нет</p>
+    <a href="https://localhost:7106/">...</a>
+}
+else
+{
+    @foreach (Product product in products)
+    {
+        <BasketItem prod="@product"></BasketItem>
+    }
+}
+
+@code {
+    private List<Product>? products = new List<Product>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        //client = ClientFactory.CreateClient();
+        //client.BaseAddress = new Uri("https://localhost:7106/api/products");
+        //value = 1;
+
+        //await LoadData();
+
+        // while (ProtectedSessionStore)
+        // {
+        //     products.Add(ProtectedSessionStore.GetAsync<Product>("Basket"));
+        // }
+    }
+}

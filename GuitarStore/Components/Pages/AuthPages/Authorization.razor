@@ -1,0 +1,101 @@
+﻿@using Microsoft.AspNetCore.Authentication.Cookies
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@using Microsoft.AspNetCore.Mvc
+@using System.Security.Claims
+
+@inject IHttpClientFactory ClientFactory
+@rendermode InteractiveServer
+@inject NavigationManager NavigationManager
+
+
+@page "/Login"
+
+<h3>Authorization</h3>
+
+<div class="nav-item px-3">
+    <NavLink class="nav-link" href="SignUp">
+        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Зарегистрироваться
+    </NavLink>
+</div>
+
+<div>
+    <p>
+        Имя Пользователя:
+        <input @bind="name" />
+    </p>
+    <p>
+        Пароль:
+        <input @bind="password" />
+    </p>
+    <p>
+        <button @onclick="Submit">Войти</button>
+    </p>
+
+    @if (messageFlag)
+    {
+        <p>@message</p>
+    }
+</div>
+
+@code {
+    private string name = "";
+    private string password = "";
+
+    private bool messageFlag = false;
+    private string message = "";
+
+    private bool shouldRender;
+    private HttpClient client = null!;
+    private string redirectionAddress = "https://localhost:7106";
+
+    protected override async Task OnInitializedAsync()
+    {
+        client = ClientFactory.CreateClient();
+        client.BaseAddress = new Uri("https://localhost:7106/api/users");
+        shouldRender = true;
+    }
+
+    async Task Submit()
+    {
+        if (name == "")
+        {
+            message = "Введите имя";
+            messageFlag = true;
+        }
+        else if (password == "")
+        {
+            message = "Введите пароль";
+            messageFlag = true;
+        }
+        else
+        {
+            messageFlag = false;
+            User response = await client.GetFromJsonAsync<User>($"{client.BaseAddress.ToString()}/Name={name}&Password={password}");
+            if (response != null)
+            {
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name, response.Name),
+                    new Claim(ClaimTypes.Role, response.Role)
+                };
+
+                var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                var principal = new ClaimsPrincipal(identity);
+
+                //await AuthenticationHttpContextExtensions.SignInAsync(HttpContext.User, principal);
+
+                NavigationManager.NavigateTo(redirectionAddress);
+            }
+            else
+            {
+                message = "Не верно введено имя или пароль";
+                messageFlag = true;
+            }
+        }
+    }
+}

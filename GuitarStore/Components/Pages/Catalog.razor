@@ -1,0 +1,53 @@
+﻿@using GuitarStore.Components.Frames
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject IHttpClientFactory ClientFactory
+@rendermode InteractiveServer
+
+@page "/Catalog/{category}"
+
+<h3>@category</h3>
+
+@if (products is null)
+{
+    <p>К сожалению в этой категории товаров нет</p>
+    <a href="https://localhost:7106/">...</a>
+}
+else
+{
+    @foreach (Product product in products)
+    {
+        <Item prod="@product"></Item>
+    }
+}
+
+@code {
+    [Parameter]
+    public string? category { get; set; }
+
+    private IEnumerable<Product>? products = Array.Empty<Product>();
+    private bool getProductsError;
+    private bool shouldRender;
+    private HttpClient client = null!;
+    private Product product = new();
+
+    protected override bool ShouldRender() => shouldRender;
+
+    protected override async Task OnInitializedAsync()
+    {
+        client = ClientFactory.CreateClient();
+        client.BaseAddress = new Uri("https://localhost:7106/api/products");
+
+        await LoadData();
+
+        shouldRender = true;
+    }
+
+    async Task LoadData()
+    {
+        products = await client.GetFromJsonAsync<List<Product>>($"{client.BaseAddress}/Category={category}") ?? products;
+    }
+    
+}
